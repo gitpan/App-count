@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Counting utility for a file consisting of the fixed number of fields like CSV
-our $VERSION = 'v0.0.1'; # VERSION
+our $VERSION = 'v0.0.2'; # VERSION
 
 use Getopt::Long qw(GetOptionsFromArray);
 use Pod::Usage;
@@ -30,7 +30,10 @@ sub run
 	GetOptionsFromArray(\@_, \%opts,
 		'g|group=s@', 'c|count', 'sum|s=s@', 'map|m=s@', 'M|map-file=s', 't|delimiter=s',
 		'max=s@', 'min=s@', 'avg|ave=s@',
-	);
+		'h', 'help',
+	) or pod2usage(-verbose => 0);
+	pod2usage(-verbose => 0) if exists $opts{h};
+	pod2usage(-verbose => 2) if exists $opts{help};
 
 	my $map;
 	$map = YAML::Any::LoadFile($opts{M}) or die "Can't load map file" if exists $opts{M};
@@ -103,7 +106,7 @@ App::count - Counting utility for a file consisting of the fixed number of field
 
 =head1 VERSION
 
-version v0.0.1
+version v0.0.2
 
 =head1 SYNOPSIS
 
@@ -117,7 +120,7 @@ This is an implementation module of a counting utility for a file consisting of 
 
 =head2 C<run(@arg)>
 
-Process arguments. Typically, C<@ARGV> is passed. For argument details, see L<installdeps>.
+Process arguments. Typically, C<@ARGV> is passed. For argument details, see L<count>.
 
 =head1 SEE ALSO
 

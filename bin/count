@@ -5,7 +5,7 @@ use warnings;
 
 # PODNAME: count
 # ABSTRACT: Counting utility for a file consisting of the fixed number of fields like CSV
-our $VERSION = 'v0.0.1'; # VERSION
+our $VERSION = 'v0.0.2'; # VERSION
 
 use App::count;
 
@@ -21,16 +21,21 @@ count - Counting utility for a file consisting of the fixed number of fields lik
 
 =head1 VERSION
 
-version v0.0.1
+version v0.0.2
 
 =head1 SYNOPSIS
 
 count C<-h>
 
+count C<--help>
+
 count [C<-g>|C<--group> E<lt>columnsE<gt>] [C<-c>|C<--count>] [C<-s>|C<--sum> E<lt>columnsE<gt>] [C<--min> E<lt>columnsE<gt>] [C<--max> E<lt>columnsE<gt>] [C<--avg>|C<--ave> E<lt>columnsE<gt>] [C<-m>|C<--map> E<lt>mapE<gt>] [C<-M>|C<--map-file> E<lt>filenameE<gt>] [C<-t>|C<--delimiter> E<lt>delimiterE<gt>] C<files>...
 
-  # show POD
+  # show brief instruction
   count -h
+
+  # show POD
+  count --help
 
   # count the number of records grouping by the column 1 and 2
   # The column number is 1-origin
@@ -47,7 +52,7 @@ count [C<-g>|C<--group> E<lt>columnsE<gt>] [C<-c>|C<--count>] [C<-s>|C<--sum> E<
 
 I has written a oneliner like the following repeatedly and repeatedly, to make some statistics.
 
-  perl -e 'while(<>) { @t = split /\t/; ++$c{$t[0]}; } foreach my $k (keys %c) { print "$k,$c{$k}\n"'
+  perl -e 'while(<>) { @t = split /\t/; ++$c{$t[0]}; } foreach my $k (keys %c) { print "$k,$c{$k}\n" }'
 
 Yes, we can write as the following making use of command line option.
 
@@ -63,6 +68,14 @@ If you want it, you can use C<sort> command.
   count -g 1 -t "\t" | sort -k n1
 
 =head1 OPTIONS
+
+=head2 C<-h>
+
+Show brief instruction.
+
+=head2 C<--help>
+
+Show this POD.
 
 =head2 C<-g>|C<--group> E<lt>columnsE<gt>
 
