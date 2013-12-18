@@ -4,43 +4,84 @@ use strict;
 use warnings;
 
 # ABSTRACT: Counting utility for a file consisting of the fixed number of fields like CSV
-our $VERSION = 'v0.0.2'; # VERSION
+our $VERSION = 'v0.1.0'; # VERSION
 
 use Getopt::Long qw(GetOptionsFromArray);
+use Getopt::Config::FromPod;
 use Pod::Usage;
 use YAML::Any;
+use Encode;
+use String::Unescape;
 
 Getopt::Long::Configure('posix_default', 'no_ignore_case');
+
+my $yaml = YAML::Any->implementation;
+my $encoder = $yaml eq 'YAML::Syck' || $yaml eq 'YAML::Old' ? sub { shift; } : sub { Encode::encode('utf-8', shift); };
+
+my $reorder = sub {
+	my ($spec, @F) = @_;
+	return @F unless length($spec);
+	my (@ret, %used);
+	foreach my $idx (0..$#F) {
+		my $index;
+		if($idx < @$spec && $spec->[$idx] ne '') {
+			$index = ($spec->[$idx] > 0) ? ($spec->[$idx] - 1) : ($spec->[$idx] + @F);
+		} else {
+			my $index_ = 0;
+			while(exists $used{$index_}) { ++$index_; }
+			$index = $index_;
+		}
+		push @ret, $F[$index];
+		$used{$index} = 1;
+	}
+	return @ret;
+};
 
 sub run
 {
 	shift if @_ && eval { $_[0]->isa(__PACKAGE__) };
 	my @spec;
-	my $handler = sub { my $key = $_[0]; push @spec, map { [$key, $_-1 ] } split /,/, $_[1]; };
+	my $max_col = 0;
+	my $handler = sub { my $key = $_[0]; push @spec, map { $max_col = $_ if $max_col < $_; [$key, $_-1 ] } split /,/, $_[1]; };
 	my %opts = (
 		c => sub { push @spec, ['count']; },
 		sum => $handler, max => $handler, min => $handler, avg => $handler,
 		'map' => sub {
 			my @t = split /,/, $_[1];
 			while(my ($idx, $key) = splice(@t, 0, 2)) {
+				$max_col = $idx if $max_col < $idx;
 				push @spec, ['map', $idx-1, $key];
 			}
 		}
 	);
-	GetOptionsFromArray(\@_, \%opts,
-		'g|group=s@', 'c|count', 'sum|s=s@', 'map|m=s@', 'M|map-file=s', 't|delimiter=s',
-		'max=s@', 'min=s@', 'avg|ave=s@',
-		'h', 'help',
-	) or pod2usage(-verbose => 0);
+	GetOptionsFromArray(\@_, \%opts, Getopt::Config::FromPod->array) or pod2usage(-verbose => 0);
 	pod2usage(-verbose => 0) if exists $opts{h};
 	pod2usage(-verbose => 2) if exists $opts{help};
+	die "Column number MUST be more than 0" if grep { $_->[1] < 0 } @spec;
 
 	my $map;
 	$map = YAML::Any::LoadFile($opts{M}) or die "Can't load map file" if exists $opts{M};
-	my $group = exists $opts{g} ? [map { $_ -1 } map { split /,/ } @{$opts{g}}] : undef;
+	die "map is specified but map file is not specified" if ! defined $map && grep { $_->[0] eq 'map' } @spec;
+	die "Map key is not found in map file" if defined $map && grep { ! exists $map->{$_} } map { $_->[2] } grep { $_->[0] eq 'map' } @spec;
+	my $group;
+	if(exists $opts{g}) {
+		if(@{$opts{g}} == 1 && $opts{g}[0] eq '*') {
+			$group = [];
+		} else {
+			$group = [map { $max_col = $_ if $max_col < $_; $_-1 } map { split /,/ } @{$opts{g}}];
+		}
+	}
+	die "Column number MUST be more than 0" if defined $group && grep { $_ < 0 } @$group; 
 	push @spec, ['count'] if ! @spec;
-	my $odelimiter = $opts{t} || "\t";
-	$opts{t} ||= '\s+';
+	if(exists $opts{r}) {
+		$opts{r} = [ split /,/, $opts{r} ];
+		foreach my $idx (@{$opts{r}}) {
+			$max_col = $idx if $max_col < $idx;
+		}
+	}
+	die 'Column number MUST NOT be 0' if exists $opts{r} && grep { length != 0 && $_ == 0 } @{$opts{r}};
+	my $odelimiter = defined($opts{t}) ? String::Unescape->unescape($opts{t}) : "\t";
+	$opts{t} = defined($opts{t}) ? String::Unescape->unescape($opts{t}) : '\s+';
 
 	my %init = (
 		max => sub { undef },
@@ -55,7 +96,7 @@ sub run
 	while(my $file = shift @_) {
 		my $fh;
 		if($file ne '-') {
-			open $fh, '<', $file;
+			open $fh, '<', $file or die "Can't open $file";
 		} else {
 			$fh = \*STDIN;
 		}
@@ -67,13 +108,16 @@ sub run
 			avg   => sub { my ($key, $idx, $F) = @_; ++$data{$key}[$idx][0]; $data{$key}[$idx][1] += $F->[$spec[$idx][1]]; },
 			sum   => sub { my ($key, $idx, $F) = @_; $data{$key}[$idx] += $F->[$spec[$idx][1]]; },
 			count => sub { my ($key, $idx, $F) = @_; ++$data{$key}[$idx]; },
-			'map' => sub { my ($key, $idx, $F) = @_; $data{$key}[$idx] ||= $map->{$spec[$idx][2]}{$F->[$spec[$idx][1]]}; },
+			'map' => sub { my ($key, $idx, $F) = @_; $data{$key}[$idx] ||= $encoder->($map->{$spec[$idx][2]}{$F->[$spec[$idx][1]]}); },
 		);
 		while(<$fh>) {
 			s/[\r\n]+$//;
 			my @F = split /$opts{t}/;
-
-			my $key = defined $group ? join("\x00", @F[@$group]) : '_';
+			if(@F < $max_col) {
+				warn 'Wrong delimiter?: '.scalar(@F).' field(s) is/are fewer than '.$max_col.' specified in the option';
+				$max_col = 0; # Avoid repeated warnings
+			}
+			my $key = defined $group ? join("\x00", @$group == 0 ? @F : @F[@$group]) : '_';
 
 			foreach my $idx (0..$#spec) {
 				$data{$key}[$idx] ||= $init{$spec[$idx][0]}->();
@@ -89,7 +133,7 @@ sub run
 			my @F;
 			push @F, split /\x00/, $key if exists $opts{g};
 			push @F, map { ref $_ ? $_->[1]/$_->[0] : $_ } @{$data{$key}};
-			print join($odelimiter, @F), "\n";
+			print join($odelimiter, $reorder->($opts{r}, @F)), "\n";
 		}
 	}
 }
@@ -106,7 +150,7 @@ App::count - Counting utility for a file consisting of the fixed number of field
 
 =head1 VERSION
 
-version v0.0.2
+version v0.1.0
 
 =head1 SYNOPSIS
 

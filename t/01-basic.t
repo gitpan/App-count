@@ -1,5 +1,7 @@
 use Test::More;
 use App::count;
+use Getopt::Config::FromPod;
+Getopt::Config::FromPod->set_class_default(-file => 'bin/count');
 
 sub check
 {
@@ -188,6 +190,27 @@ EOF
 		'max, min, avg'
 	],
 	[
+		[qw(-g * -m 1,field1 -m 2,field2 -M t/map.yaml)], <<EOF,
+1	2	3
+1	2	4
+1	1	1
+2	3	1
+3	1	2
+1	1	2
+2	3	2
+EOF
+		<<EOF,
+1	1	1	one	ONE
+1	1	2	one	ONE
+1	2	3	one	TWO
+1	2	4	one	TWO
+2	3	1	two	THREE
+2	3	2	two	THREE
+3	1	2	three	ONE
+EOF
+		'-g*'
+	],
+	[
 		[qw(-g 1,2 -m 1,field1 -m 2,field2 -c -M t/map.yaml)], <<EOF,
 1	2	3
 1	2	4
@@ -222,6 +245,74 @@ EOF
 3	1	three	ONE	1
 EOF
 		'-g,mm'
+	],
+	[
+		[qw(-g 1 -c -s 2 -s 3 -r ,3,2)], <<EOF,
+1	2	3
+1	1	1
+2	3	1
+3	1	2
+EOF
+		<<EOF,
+1	3	2	4
+2	3	1	1
+3	1	1	2
+EOF
+		'-gcssr,'
+	],
+	[
+		[qw(-r -2 -g 1,2)], <<EOF,
+1	2	3
+1	2	4
+1	1	1
+2	3	1
+3	1	2
+1	1	2
+2	3	2
+EOF
+		<<EOF,
+1	1	2
+2	1	2
+3	2	2
+1	3	1
+EOF
+		'-r-g,'
+	],
+	[
+		[qw(-r 1,-3,2,-2 -g 1,2 -m 1,field1,2,field2 -c -M t/map.yaml)], <<EOF,
+1	2	3
+1	2	4
+1	1	1
+2	3	1
+3	1	2
+1	1	2
+2	3	2
+EOF
+		<<EOF,
+1	one	1	ONE	2
+1	one	2	TWO	2
+2	two	3	THREE	2
+3	three	1	ONE	1
+EOF
+		'-rg,mm'
+	],
+	[
+		[qw(-r ,-3,,-2 -g 1,2 -m 1,field1,2,field2 -c -M t/map.yaml)], <<EOF,
+1	2	3
+1	2	4
+1	1	1
+2	3	1
+3	1	2
+1	1	2
+2	3	2
+EOF
+		<<EOF,
+1	one	1	ONE	2
+1	one	2	TWO	2
+2	two	3	THREE	2
+3	three	1	ONE	1
+EOF
+		'-r,g,mm'
 	],
 );
 

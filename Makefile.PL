@@ -11,9 +11,7 @@ use ExtUtils::MakeMaker 6.30;
 my %WriteMakefileArgs = (
   "ABSTRACT" => "Counting utility for a file consisting of the fixed number of fields like CSV",
   "AUTHOR" => "Yasutaka ATARASHI <yakex\@cpan.org>",
-  "BUILD_REQUIRES" => {
-    "Test::More" => 0
-  },
+  "BUILD_REQUIRES" => {},
   "CONFIGURE_REQUIRES" => {
     "ExtUtils::MakeMaker" => "6.30"
   },
@@ -24,26 +22,42 @@ my %WriteMakefileArgs = (
   "LICENSE" => "perl",
   "NAME" => "App::count",
   "PREREQ_PM" => {
+    "Encode" => 0,
+    "Getopt::Config::FromPod" => 0,
+    "String::Unescape" => 0,
     "YAML::Any" => 0
   },
-  "VERSION" => "v0.0.2",
+  "TEST_REQUIRES" => {
+    "File::Spec" => 0,
+    "IO::Handle" => 0,
+    "IPC::Open3" => 0,
+    "Test::Exception" => 0,
+    "Test::More" => 0
+  },
+  "VERSION" => "v0.1.0",
   "test" => {
     "TESTS" => "t/*.t"
   }
 );
 
 
-unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {
-  my $br = delete $WriteMakefileArgs{BUILD_REQUIRES};
-  my $pp = $WriteMakefileArgs{PREREQ_PM};
-  for my $mod ( keys %$br ) {
-    if ( exists $pp->{$mod} ) {
-      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod};
-    }
-    else {
-      $pp->{$mod} = $br->{$mod};
-    }
-  }
+my %FallbackPrereqs = (
+  "Encode" => 0,
+  "File::Spec" => 0,
+  "Getopt::Config::FromPod" => 0,
+  "IO::Handle" => 0,
+  "IPC::Open3" => 0,
+  "String::Unescape" => 0,
+  "Test::Exception" => 0,
+  "Test::More" => 0,
+  "YAML::Any" => 0
+);
+
+
+unless ( eval { ExtUtils::MakeMaker->VERSION(6.63_03) } ) {
+  delete $WriteMakefileArgs{TEST_REQUIRES};
+  delete $WriteMakefileArgs{BUILD_REQUIRES};
+  $WriteMakefileArgs{PREREQ_PM} = \%FallbackPrereqs;
 }
 
 delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
