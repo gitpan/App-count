@@ -20,10 +20,11 @@ name: App-count
 requires:
   Encode: 0
   Getopt::Config::FromPod: 0
+  Getopt::Long: 2.36
   String::Unescape: 0
   YAML::Any: 0
   perl: 5.006
 resources:
   homepage: https://github.com/yak1ex/App-count
   repository: https://github.com/yak1ex/App-count.git
-version: v0.1.0
+version: v0.1.1

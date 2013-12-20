@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Counting utility for a file consisting of the fixed number of fields like CSV
-our $VERSION = 'v0.1.0'; # VERSION
+our $VERSION = 'v0.1.1'; # VERSION
 
 use Getopt::Long qw(GetOptionsFromArray);
 use Getopt::Config::FromPod;
@@ -150,7 +150,7 @@ App::count - Counting utility for a file consisting of the fixed number of field
 
 =head1 VERSION
 
-version v0.1.0
+version v0.1.1
 
 =head1 SYNOPSIS
 

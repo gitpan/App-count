@@ -24,6 +24,7 @@ my %WriteMakefileArgs = (
   "PREREQ_PM" => {
     "Encode" => 0,
     "Getopt::Config::FromPod" => 0,
+    "Getopt::Long" => "2.36",
     "String::Unescape" => 0,
     "YAML::Any" => 0
   },
@@ -34,7 +35,7 @@ my %WriteMakefileArgs = (
     "Test::Exception" => 0,
     "Test::More" => 0
   },
-  "VERSION" => "v0.1.0",
+  "VERSION" => "v0.1.1",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -45,6 +46,7 @@ my %FallbackPrereqs = (
   "Encode" => 0,
   "File::Spec" => 0,
   "Getopt::Config::FromPod" => 0,
+  "Getopt::Long" => "2.36",
   "IO::Handle" => 0,
   "IPC::Open3" => 0,
   "String::Unescape" => 0,
